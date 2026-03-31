@@ -33,6 +33,19 @@ This UI wraps the LeRobot CLI into a browser-based workflow for:
 
 The backend runs FastAPI and shells out to LeRobot commands. The frontend is a Next.js wizard intended to reduce operator error during demos and data collection.
 
+## Actual Project Status
+
+This repository reflects the real hackathon delivery state rather than an idealized product state.
+
+- The Web UI, backend APIs, and hardware workflow were all implemented and used together.
+- Auto calibration works through the UI.
+- Teleoperation issues were debugged and fixed in the current codebase.
+- The dataset and Qualia-trained model were successfully produced and published to Hugging Face.
+- The final delivery video is included in this repository as a reproducible project artifact.
+- The system still has environment-sensitive and machine-specific caveats, especially around macOS camera permissions, local Python path setup, and hardware port stability.
+
+In other words: this is a working hackathon software delivery with real engineering progress, but it still needs hardening before being treated as a polished production robotics stack.
+
 ## Artifact Links
 
 | Artifact | Link | Notes |
@@ -70,6 +83,36 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
+## Deployment Recommendations
+
+For future demos or team handoff, we recommend deploying the system with clear separation between source code, runtime environment, and model/data artifacts.
+
+### Recommended deployment shape
+
+1. Keep this repository as the application layer:
+   - frontend
+   - backend
+   - scripts
+   - docs
+2. Keep the LeRobot fork in a separate repository checkout.
+3. Keep Python environments outside the Git working tree when possible.
+4. Keep datasets and trained models on Hugging Face instead of storing them in Git.
+
+### Recommended runtime setup
+
+- Prefer a dedicated Linux or Jetson runtime for stable hardware demos.
+- If macOS must be used, verify camera and serial permissions before the demo day.
+- Start the backend with an explicit `PYTHONPATH` to the LeRobot source tree.
+- Run the frontend and backend as separate processes so logs and failures are easier to isolate.
+- Keep a known-good fallback model cached locally before live demos.
+
+### Practical deployment advice
+
+- Tag a known-good commit before changing hardware, dependencies, or calibration logic.
+- Keep one stable environment for demos and a second isolated environment for experiments.
+- Back up calibration files and working config before re-calibration.
+- Treat local caches as disposable; treat datasets and models on Hugging Face as the source of truth.
+
 ## Environment Incident And Isolation Note
 
 Our first local environment setup did not stay healthy. We kept the failed state for reference under the local LeRobot workspace as:
@@ -97,6 +140,19 @@ The most important recurring pitfalls were:
 - inference must start with a valid `PYTHONPATH` pointing to the LeRobot source tree
 - evaluation dataset names should be unique and should start with `eval_`
 - serial ports and calibration files need strict left/right ID consistency in bimanual mode
+
+## Future Improvements
+
+The next iteration should focus less on adding features and more on reducing operational fragility.
+
+- Package backend startup into a single reproducible launcher with environment validation.
+- Move machine-specific paths out of scripts and into config or environment variables.
+- Add a proper deployment guide for Linux, macOS, and Jetson separately.
+- Add health checks for camera authorization, Hugging Face login, model path validity, and serial lock state before a run starts.
+- Add CI for the frontend and backend so regressions are caught before live demos.
+- Publish versioned release notes and stable tagged demo configurations.
+- Improve video handling by attaching the final video as a GitHub Release asset in addition to keeping a repo copy.
+- Continue reducing dependency weight in teleoperation and inference paths so startup is faster and easier to debug.
 
 ## Repository Structure
 
