@@ -1,6 +1,7 @@
 """Calibration service for checking and managing device calibrations."""
 
 from pathlib import Path
+import sys
 from typing import List, Optional
 
 from backend.models.config import Config
@@ -123,7 +124,9 @@ class CalibrationService:
         prefix = "robot" if device_type == "robot" else "teleop"
 
         return [
-            "lerobot-calibrate",
+            sys.executable,
+            "-m",
+            "lerobot.scripts.lerobot_calibrate",
             f"--{prefix}.type={robot_type}",
             f"--{prefix}.port={port}",
             f"--{prefix}.id={device_id}",

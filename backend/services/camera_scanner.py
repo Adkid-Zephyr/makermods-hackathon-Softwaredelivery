@@ -1,15 +1,25 @@
 """Camera scanning service wrapping lerobot_find_cameras logic."""
 
 import json
+import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import cv2
 
 from backend.models.setup import CameraInfo, CameraPreview
+
+
+class CameraAccessError(RuntimeError):
+    """Raised when the current process is not allowed to use the camera."""
+
+    def __init__(self, message: str, hint: Optional[str] = None):
+        super().__init__(message)
+        self.hint = hint
 
 
 class CameraScannerService:
@@ -28,6 +38,106 @@ class CameraScannerService:
 
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _camera_backend() -> int:
+        """Prefer AVFoundation explicitly on macOS for index-based capture."""
+        if platform.system() == "Darwin" and hasattr(cv2, "CAP_AVFOUNDATION"):
+            return cv2.CAP_AVFOUNDATION
+        return cv2.CAP_ANY
+
+    @staticmethod
+    def _open_capture(index: int) -> cv2.VideoCapture:
+        """Open a camera capture using the platform-preferred backend."""
+        backend = CameraScannerService._camera_backend()
+        if backend == cv2.CAP_ANY:
+            return cv2.VideoCapture(index)
+        return cv2.VideoCapture(index, backend)
+
+    @staticmethod
+    def _terminal_camera_helper() -> Path:
+        """Return the Terminal-based backend launcher path."""
+        return Path(__file__).resolve().parents[2] / "scripts" / "start_backend_terminal.command"
+
+    @staticmethod
+    def _camera_permission_hint() -> str:
+        """Return a macOS-specific hint for fixing camera permission errors."""
+        bundle_id = os.environ.get("__CFBundleIdentifier")
+        executable = sys.executable
+        terminal_helper = CameraScannerService._terminal_camera_helper()
+
+        target = f"{bundle_id} ({Path(executable).name})" if bundle_id else executable
+        reset_cmd = (
+            f"tccutil reset Camera {bundle_id}" if bundle_id else "tccutil reset Camera"
+        )
+
+        return (
+            f"Grant Camera access to {target} in System Settings > Privacy & Security > Camera, "
+            f"then retry Detect Cameras. If it was previously denied, run `{reset_cmd}` and "
+            "relaunch the backend so macOS can prompt again. "
+            f"If Codex does not appear in Camera settings, launch the backend from Terminal with "
+            f"`{terminal_helper}` instead."
+        )
+
+    @staticmethod
+    def _camera_permission_pending_hint() -> str:
+        """Return a macOS-specific hint for a not-yet-granted camera prompt."""
+        bundle_id = os.environ.get("__CFBundleIdentifier")
+        executable = sys.executable
+        terminal_helper = CameraScannerService._terminal_camera_helper()
+
+        target = f"{bundle_id} ({Path(executable).name})" if bundle_id else executable
+        reset_cmd = (
+            f"tccutil reset Camera {bundle_id}" if bundle_id else "tccutil reset Camera"
+        )
+
+        return (
+            f"macOS has not granted Camera access to {target} yet. "
+            "Bring the app to the foreground and allow the system Camera prompt. "
+            f"If no prompt appears, enable Camera access for {target} in System Settings > "
+            f"Privacy & Security > Camera, or run `{reset_cmd}` and relaunch the app."
+            f" If the Camera settings entry never appears, start the backend from Terminal with "
+            f"`{terminal_helper}` so Terminal.app can request access directly."
+        )
+
+    @staticmethod
+    def _get_macos_camera_authorization_status() -> Optional[int]:
+        """Return macOS AVFoundation camera authorization status if available."""
+        if platform.system() != "Darwin":
+            return None
+
+        try:
+            import objc
+
+            objc.loadBundle(
+                "AVFoundation",
+                globals(),
+                bundle_path="/System/Library/Frameworks/AVFoundation.framework",
+            )
+            av_capture_device = objc.lookUpClass("AVCaptureDevice")
+            return int(av_capture_device.authorizationStatusForMediaType_("vide"))
+        except Exception:
+            return None
+
+    def _ensure_camera_access(self) -> None:
+        """Raise a helpful error if macOS has denied camera access."""
+        status = self._get_macos_camera_authorization_status()
+
+        if status == 0:
+            raise CameraAccessError(
+                "macOS has not granted camera access for the backend process yet.",
+                hint=self._camera_permission_pending_hint(),
+            )
+        if status == 2:
+            raise CameraAccessError(
+                "macOS denied camera access for the backend process.",
+                hint=self._camera_permission_hint(),
+            )
+        if status == 1:
+            raise CameraAccessError(
+                "macOS has camera access restricted for the backend process.",
+                hint=self._camera_permission_hint(),
+            )
 
     @staticmethod
     def _is_external_camera(camera: dict) -> bool:
@@ -107,6 +217,8 @@ class CameraScannerService:
         Returns:
             List of CameraInfo objects for detected cameras.
         """
+        self._ensure_camera_access()
+
         # Use system_profiler count to limit scan range (avoids "out of bound" errors)
         system_cameras = self._get_system_camera_info()
         scan_limit = len(system_cameras) if system_cameras else max_cameras
@@ -114,7 +226,7 @@ class CameraScannerService:
         cameras = []
 
         for index in range(scan_limit):
-            cap = cv2.VideoCapture(index)
+            cap = self._open_capture(index)
 
             if cap.isOpened():
                 cap.release()
@@ -148,6 +260,8 @@ class CameraScannerService:
             shutil.rmtree(self.output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        self._ensure_camera_access()
+
         # Detect cameras if not specified
         if camera_indices is None:
             detected = self.list_cameras()
@@ -156,7 +270,7 @@ class CameraScannerService:
         previews = {}
 
         for index in camera_indices:
-            cap = cv2.VideoCapture(index)
+            cap = self._open_capture(index)
 
             if not cap.isOpened():
                 continue

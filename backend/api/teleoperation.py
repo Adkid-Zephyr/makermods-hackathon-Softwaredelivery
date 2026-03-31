@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sys
 
 from fastapi import APIRouter, HTTPException
 
@@ -17,36 +18,40 @@ config_manager = ConfigManager()
 
 def build_teleoperation_command(config, display_data: bool = True) -> list[str]:
     """Build teleoperation command from config."""
+    script_module = "backend.scripts.lightweight_teleoperate"
     if config.mode == "bimanual":
         bi = config.bimanual
-        # lerobot's bimanual wrappers derive sub-arm IDs by appending _left/_right
-        # to the base id (e.g. id="follower" → left_id="follower_left").
-        # The config stores per-arm calibration IDs, so we use the follower_id
-        # field as the base id passed to --robot.id / --teleop.id.
         return [
-            "lerobot-teleoperate",
-            "--robot.type=bi_so101_follower",
-            f"--robot.left_arm_port={bi.left_follower_port}",
-            f"--robot.right_arm_port={bi.right_follower_port}",
-            f"--robot.id={bi.follower_id or 'bimanual_follower'}",
-            "--teleop.type=bi_so101_leader",
-            f"--teleop.left_arm_port={bi.left_leader_port}",
-            f"--teleop.right_arm_port={bi.right_leader_port}",
-            f"--teleop.id={bi.leader_id or 'bimanual_leader'}",
-            f"--display_data={str(display_data).lower()}",
+            sys.executable,
+            "-m",
+            script_module,
+            "--mode=bimanual",
+            f"--left-follower-port={bi.left_follower_port}",
+            f"--right-follower-port={bi.right_follower_port}",
+            f"--left-leader-port={bi.left_leader_port}",
+            f"--right-leader-port={bi.right_leader_port}",
+            f"--bimanual-follower-id={bi.follower_id or 'bimanual_follower'}",
+            f"--bimanual-leader-id={bi.leader_id or 'bimanual_leader'}",
         ]
     else:
         sa = config.single_arm
-        return [
-            "lerobot-teleoperate",
-            "--robot.type=so101_follower",
-            f"--robot.port={sa.follower_port}",
-            f"--robot.id={sa.follower_id or 'single_follower'}",
-            "--teleop.type=so101_leader",
-            f"--teleop.port={sa.leader_port}",
-            f"--teleop.id={sa.leader_id or 'single_leader'}",
-            f"--display_data={str(display_data).lower()}",
+        command = [
+            sys.executable,
+            "-m",
+            script_module,
+            "--mode=single",
+            f"--follower-port={sa.follower_port}",
+            f"--leader-port={sa.leader_port}",
+            f"--follower-id={sa.follower_id or 'single_follower'}",
+            f"--leader-id={sa.leader_id or 'single_leader'}",
         ]
+        if display_data:
+            command.append("--display-data")
+        return command
+
+    if display_data:
+        command = [*command, "--display-data"]
+    return command
 
 
 def _extract_ports(config) -> list[str]:
@@ -95,7 +100,7 @@ async def start_teleoperation(request: TeleoperationRequest):
         except PortInUseError as e:
             raise HTTPException(status_code=409, detail={"message": str(e), "owner": e.owner, "port": e.port})
 
-        command = build_teleoperation_command(config, display_data=True)
+        command = build_teleoperation_command(config, display_data=request.display_data)
         process_id = await process_manager.start_process(
             command, "teleoperation", env={"RERUN": "off"}
         )

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, Camera } from "lucide-react";
+import { DevErrorPanel } from "@/components/common/dev-error-panel";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -47,6 +48,7 @@ function CameraFeed({ opencvIndex }: { opencvIndex: number }) {
 export function CamerasStep() {
   const { state, dispatch } = useWizard();
   const [detecting, setDetecting] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const selectedCameras = state.cameraSelections.filter((c) => c.included);
   // Allow continuing with no cameras, but if any are selected they must be named
@@ -69,12 +71,13 @@ export function CamerasStep() {
 
   async function detectCameras() {
     setDetecting(true);
+    setError(null);
     try {
       // Use backend OpenCV detection — returns ground-truth camera indices
       const cameras = await services.listCameras();
       dispatch({ type: "SET_DETECTED_CAMERAS", cameras });
     } catch (err) {
-      console.error("Failed to detect cameras", err);
+      setError(err instanceof Error ? err : new Error("Failed to detect cameras"));
     } finally {
       setDetecting(false);
     }
@@ -168,6 +171,8 @@ export function CamerasStep() {
             Click &quot;Detect Cameras&quot; to find connected cameras.
           </p>
         )}
+
+        <DevErrorPanel error={error} />
       </div>
     </StepCard>
   );

@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import multiprocessing as mp
+import platform
 import threading
 import time
 import traceback as tb
@@ -13,7 +14,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.models.setup import CameraInfo, CameraPreview, PortInfo
-from backend.services.camera_scanner import CameraScannerService
+from backend.services.camera_scanner import CameraAccessError, CameraScannerService
 from backend.services.port_scanner import PortScannerService
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,17 @@ def _get_error_hint(e: Exception) -> Optional[str]:
     return None
 
 
+def _camera_error_detail(message: str, e: Exception) -> dict:
+    """Build a structured error payload for camera-related API failures."""
+    detail = {
+        "message": f"{message}: {e}",
+        "traceback": tb.format_exc(),
+    }
+    if isinstance(e, CameraAccessError) and e.hint:
+        detail["hint"] = e.hint
+    return detail
+
+
 @router.get("/ports", response_model=List[PortInfo])
 async def list_ports():
     """List all available serial ports."""
@@ -60,10 +72,21 @@ async def list_cameras(exclude_builtin: bool = False):
     try:
         # Stop any active MJPEG streams first — the scan opens cv2.VideoCapture
         # for each index, which conflicts with streams in the same process.
+        if platform.system() == "Darwin":
+            # AVFoundation camera initialization is more reliable from the main thread.
+            _stop_all_streams()
+            return camera_scanner.list_cameras(exclude_builtin=exclude_builtin)
+
         await asyncio.to_thread(_stop_all_streams)
-        return await asyncio.to_thread(camera_scanner.list_cameras, exclude_builtin)
+        return await asyncio.to_thread(
+            camera_scanner.list_cameras,
+            exclude_builtin=exclude_builtin,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list cameras: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=_camera_error_detail("Failed to list cameras", e),
+        )
 
 
 @router.post("/cameras/preview", response_model=Dict[int, CameraPreview])
@@ -74,11 +97,18 @@ async def capture_camera_previews(camera_indices: List[int] = None):
         camera_indices: Optional list of camera indices to capture. If None, captures all.
     """
     try:
+        if platform.system() == "Darwin":
+            return camera_scanner.capture_preview(camera_indices)
+
         return await asyncio.to_thread(
-            camera_scanner.capture_preview, camera_indices
+            camera_scanner.capture_preview,
+            camera_indices,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to capture previews: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=_camera_error_detail("Failed to capture previews", e),
+        )
 
 
 @router.get("/cameras/preview/{camera_index}")

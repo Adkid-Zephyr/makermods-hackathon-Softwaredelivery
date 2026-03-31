@@ -322,7 +322,7 @@ export function RecordStep() {
     setRecordingSuccess(false);
     try {
       // Save current wizard state (ports, cameras, calibration) to backend config
-      await services.saveConfig(state);
+      await services.saveConfig(state, { applyRecordingCameraConfig: true });
       // Release any MJPEG camera streams so the recording subprocess can access them
       await services.stopCameraStreams().catch(() => {});
       // Clear cached data so the new recording replaces any previous dataset

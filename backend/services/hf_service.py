@@ -4,7 +4,14 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
-from huggingface_hub import HfApi, hf_hub_download, list_datasets
+try:
+    from huggingface_hub import HfApi, hf_hub_download, list_datasets
+    HF_IMPORT_ERROR: Exception | None = None
+except Exception as exc:  # pragma: no cover - depends on local env health
+    HfApi = None
+    hf_hub_download = None
+    list_datasets = None
+    HF_IMPORT_ERROR = exc
 
 from backend.models.recording import HFRepoInfo
 from backend.models.system import HFLoginStatus
@@ -15,7 +22,15 @@ class HuggingFaceService:
 
     def __init__(self):
         """Initialize HuggingFaceService."""
-        self.api = HfApi()
+        self.import_error = HF_IMPORT_ERROR
+        self.api = HfApi() if HfApi is not None else None
+
+    def _require_available(self) -> None:
+        """Raise a clear error when huggingface_hub is unavailable."""
+        if self.import_error is not None or self.api is None:
+            raise RuntimeError(
+                "huggingface_hub is unavailable in the current Python environment"
+            ) from self.import_error
 
     def check_login(self) -> HFLoginStatus:
         """Check if user is authenticated with HuggingFace Hub.
@@ -27,6 +42,9 @@ class HuggingFaceService:
         Returns:
             HFLoginStatus with authentication information.
         """
+        if self.api is None:
+            return HFLoginStatus(is_logged_in=False, username=None)
+
         try:
             info = self.api.whoami()
             username = info.get("name") if isinstance(info, dict) else None
@@ -43,6 +61,8 @@ class HuggingFaceService:
         Returns:
             List of HFRepoInfo objects.
         """
+        self._require_available()
+
         try:
             datasets = list_datasets(author=username)
 
@@ -71,6 +91,8 @@ class HuggingFaceService:
         Returns:
             HFRepoInfo for created repo, or None if failed.
         """
+        self._require_available()
+
         repo_id = f"{username}/{repo_name}"
 
         try:
@@ -101,6 +123,8 @@ class HuggingFaceService:
         Returns:
             List of image feature keys (e.g. ["observation.images.front_cam"]).
         """
+        self._require_available()
+
         try:
             path = hf_hub_download(repo_id, "meta/info.json", repo_type="dataset")
             with open(path) as f:

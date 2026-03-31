@@ -28,3 +28,4 @@ webui_config.json
 next-env.d.ts
 
 outputs/
+.sparse-backup-*/

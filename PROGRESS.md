@@ -2,6 +2,9 @@
 
 ## Changelog
 
+### 2026-03-31
+- **docs**: Packaged the repository for public hackathon delivery. Rewrote `README.md` to include the Hugging Face dataset/model links, delivery video entry, environment-failure postmortem, Git isolation reminder, and pointers to bug/developer docs. Added `docs/BUG_LOG.md`, `docs/DEVELOPER_WARNINGS.md`, `docs/assets/makermods-delivery-video.mp4`, `docs/assets/makermods-delivery-poster.png`, and `LICENSE`.
+
 ### 2026-03-27
 - **fix**: Backend hang when switching tabs with active camera streams or teleoperation. Multiple issues fixed: (1) All camera stream operations (`add_client`, `remove_client`, `_get_camera_stream`, `_stop_all_streams`, `list_cameras`, `capture_preview`) now run in `asyncio.to_thread()` so they never block the event loop. (2) `_stop_all_streams()` no longer holds `_streams_lock` during the slow `process.join()` — collects streams under the lock, stops them outside it. (3) `_camera_worker` subprocess exits cleanly when the camera is unavailable (e.g. held by teleoperation) instead of hanging in `cv2.VideoCapture()`. (4) `_stop()` uses 0.5s timeout + immediate kill instead of 3s. (5) Per-camera stop endpoint and explicit `CameraFeed` unmount cleanup to handle Next.js proxy not propagating MJPEG disconnects. Modified: `backend/api/setup.py`, `frontend/components/wizard/steps/cameras-step.tsx`, `frontend/components/common/robot-display.tsx`.
 - **fix**: Manual calibration WebSocket leak on tab navigation. The `useManualCalibration` hook was missing a cleanup `useEffect`, so the WebSocket stayed open when navigating away, keeping the backend port lock held indefinitely. Added unmount cleanup to close the WebSocket. Modified: `frontend/hooks/use-manual-calibration.ts`.
@@ -343,4 +346,3 @@ src/lerobot/webui/
         ├── mock-data.ts
         └── utils.ts
 ```
-

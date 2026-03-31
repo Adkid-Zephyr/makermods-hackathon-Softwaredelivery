@@ -4,9 +4,11 @@ import asyncio
 import os
 import re
 import signal
+import sys
 import uuid
 from collections import deque
 from datetime import datetime
+from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional
 
 # Regex to strip ANSI escape sequences from subprocess output
@@ -66,6 +68,36 @@ class ProcessManager:
         proc_env["PYTHONUNBUFFERED"] = "1"
         if env:
             proc_env.update(env)
+
+        # Ensure subprocesses can find companion executables installed into the
+        # active Python environment, such as `rerun`, which lives alongside
+        # `sys.executable` inside `.conda-env/bin`.
+        python_bin_dir = str(Path(sys.executable).resolve().parent)
+        path_entries = [entry for entry in proc_env.get("PATH", "").split(os.pathsep) if entry]
+        if python_bin_dir not in path_entries:
+            proc_env["PATH"] = os.pathsep.join([python_bin_dir, *path_entries])
+
+        # `rerun-sdk` is installed in this environment under `site-packages/rerun_sdk`,
+        # but on this machine the accompanying `.pth` file is not being honored
+        # consistently for subprocess launches. Add it explicitly so LeRobot's
+        # unconditional `import rerun` works in teleoperate/record flows.
+        pythonpath_entries = [entry for entry in proc_env.get("PYTHONPATH", "").split(os.pathsep) if entry]
+        rerun_sdk_paths = []
+        for entry in sys.path:
+            if not entry:
+                continue
+            candidate = Path(entry) / "rerun_sdk"
+            if candidate.exists():
+                rerun_sdk_paths.append(str(candidate))
+        py_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+        fallback_rerun_sdk = Path(sys.executable).resolve().parent.parent / "lib" / py_version / "site-packages" / "rerun_sdk"
+        if fallback_rerun_sdk.exists():
+            rerun_sdk_paths.append(str(fallback_rerun_sdk))
+        for rerun_sdk_path in rerun_sdk_paths:
+            if rerun_sdk_path not in pythonpath_entries:
+                pythonpath_entries.append(rerun_sdk_path)
+        if pythonpath_entries:
+            proc_env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
 
         # Create subprocess with pipes for stdout/stderr.
         # Pipe stdin so we can feed newlines — this auto-accepts calibration
@@ -206,8 +238,20 @@ class ProcessManager:
 
     def _build_status(self, process_id: str, process_info: ProcessInfo) -> ProcessStatus:
         """Build a ProcessStatus from a ProcessInfo. Does not acquire the lock."""
+        error_message = process_info.error_message
         if process_info.process.returncode is not None:
             state = ProcessState.ERROR if process_info.process.returncode != 0 else ProcessState.STOPPED
+            if state == ProcessState.ERROR and not error_message:
+                returncode = process_info.process.returncode
+                if returncode < 0:
+                    signal_num = -returncode
+                    try:
+                        signal_name = signal.Signals(signal_num).name
+                        error_message = f"Process crashed with signal {signal_name}"
+                    except ValueError:
+                        error_message = f"Process crashed with signal {signal_num}"
+                else:
+                    error_message = f"Process exited with code {returncode}"
         else:
             state = ProcessState.RUNNING
 
@@ -223,7 +267,7 @@ class ProcessManager:
             started_at=process_info.started_at,
             stopped_at=process_info.stopped_at,
             uptime_seconds=uptime_seconds,
-            error_message=process_info.error_message,
+            error_message=error_message,
         )
 
     async def get_logs(self, process_id: str, last_n: Optional[int] = None) -> list[str]:

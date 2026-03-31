@@ -235,6 +235,10 @@ export function InferenceStep() {
   }
 
   const hasLogs = logs.length > 0;
+  const estimatedRunSeconds =
+    config.numEpisodes > 0 && config.episodeTimeS > 0
+      ? config.numEpisodes * config.episodeTimeS
+      : 0;
 
   return (
     <StepCard
@@ -356,7 +360,8 @@ export function InferenceStep() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Local folder path or HuggingFace repo ID of the trained policy.
+              Local folder path or HuggingFace repo ID of the trained policy. If a matching local folder exists under
+              <span className="font-mono"> models/</span>, the backend will use it first for faster startup.
             </p>
           </div>
 
@@ -371,7 +376,8 @@ export function InferenceStep() {
               disabled={isRunning}
             />
             <p className="text-xs text-muted-foreground">
-              Evaluation results will be saved to this HuggingFace dataset.
+              Evaluation results use this dataset name locally. Hub upload is skipped during UI inference so startup
+              and shutdown stay faster.
             </p>
             {config.repoId.trim() !== "" && (() => {
               const datasetName = config.repoId.includes("/")
@@ -440,6 +446,14 @@ export function InferenceStep() {
               )}
             </div>
           </div>
+
+          {estimatedRunSeconds > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="inline h-3 w-3 mr-1 -mt-0.5" />
+              Inference will auto-stop after {config.numEpisodes} episode{config.numEpisodes === 1 ? "" : "s"}.
+              With the current settings, that is about {estimatedRunSeconds} seconds before local eval data is saved.
+            </p>
+          )}
 
           <div className="flex items-center gap-3">
             <Switch

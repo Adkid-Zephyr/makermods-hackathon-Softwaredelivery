@@ -14,6 +14,7 @@ class InferenceRequest(BaseModel):
     num_episodes: int = Field(10, description="Number of evaluation episodes")
     episode_time_s: int = Field(50, description="Episode duration in seconds")
     display_data: bool = Field(True, description="Whether to show visualization")
+    model_type: Optional[str] = Field(None, description="Policy type such as act or smolvla")
 
 
 class InferenceResponse(BaseModel):

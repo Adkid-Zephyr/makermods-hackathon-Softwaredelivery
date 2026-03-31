@@ -5,6 +5,19 @@ const USE_MOCK = false;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
+type SavedCameraConfig = {
+  index: number;
+  name: string;
+  width: number;
+  height: number;
+  fps: number;
+};
+
+type SavedWebUiConfig = {
+  single_arm?: { cameras?: SavedCameraConfig[] };
+  bimanual?: { cameras?: SavedCameraConfig[] };
+};
+
 /** Structured error with an optional traceback and developer hint, returned from the backend. */
 export class DevError extends Error {
   traceback?: string;
@@ -178,20 +191,42 @@ export const services = {
     await fetchAPI(`/api/calibration/stop/${processId}`, { method: "POST" });
   },
 
-  saveConfig: async (state: WizardState): Promise<void> => {
+  saveConfig: async (
+    state: WizardState,
+    options?: { applyRecordingCameraConfig?: boolean }
+  ): Promise<void> => {
     if (USE_MOCK) return;
+    const applyRecordingCameraConfig = options?.applyRecordingCameraConfig ?? false;
     const mode = state.robotMode === "bimanual" ? "bimanual" : "single";
+    const existingConfig = await fetchAPI<SavedWebUiConfig>("/api/config");
+    const existingCameras =
+      mode === "bimanual"
+        ? existingConfig.bimanual?.cameras ?? []
+        : existingConfig.single_arm?.cameras ?? [];
+
     // Use the stored opencvIndex (position in the full unfiltered videoinput list)
     // so built-in cameras don't shift the numbering for external cameras.
     const cameras = state.cameraSelections
       .filter((c) => c.included)
-      .map((c) => ({
-        index: c.opencvIndex,
-        name: c.name,
-        width: state.recordingConfig.cameraWidth,
-        height: state.recordingConfig.cameraHeight,
-        fps: state.recordingConfig.cameraFps,
-      }));
+      .map((c) => {
+        const existing = existingCameras.find(
+          (saved) => saved.index === c.opencvIndex || saved.name === c.name
+        );
+
+        return {
+          index: c.opencvIndex,
+          name: c.name,
+          width: applyRecordingCameraConfig
+            ? state.recordingConfig.cameraWidth
+            : (existing?.width ?? state.recordingConfig.cameraWidth),
+          height: applyRecordingCameraConfig
+            ? state.recordingConfig.cameraHeight
+            : (existing?.height ?? state.recordingConfig.cameraHeight),
+          fps: applyRecordingCameraConfig
+            ? state.recordingConfig.cameraFps
+            : (existing?.fps ?? state.recordingConfig.cameraFps),
+        };
+      });
     // Strip .json extension from calibration file names to get the ID
     const calId = (file: string | null | undefined) =>
       file && file !== "new" ? file.replace(/\.json$/, "") : null;
@@ -276,6 +311,7 @@ export const services = {
         num_episodes: config.numEpisodes,
         episode_time_s: config.episodeTimeS,
         display_data: config.displayData,
+        model_type: config.modelType,
       }),
     });
   },

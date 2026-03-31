@@ -1,138 +1,119 @@
 # MakerMods LeRobot UI
 
-Web UI for LeRobot SO101 bimanual robot arms — teleoperation, calibration, and data recording. The UI wraps lerobot CLI commands and does not modify the lerobot codebase.
+Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo packages the Web UI, the public Hugging Face artifacts, the delivery video, and the engineering notes we want reviewers and future developers to see first.
 
-**This README covers installation of the UI only.** Install and configure [lerobot](https://github.com/huggingface/lerobot) separately (see [Lerobot installation](https://github.com/huggingface/lerobot#installation)).
+## Deliverables
 
----
+- **Web UI source code**: this repository
+- **LeRobot fork used by the project**: [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods)
+- **Hugging Face dataset**: [Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12)
+- **Qualia-trained model**: [qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9)
+- **Delivery video**: [docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4)
+- **Bug log**: [docs/BUG_LOG.md](docs/BUG_LOG.md)
+- **Developer warnings**: [docs/DEVELOPER_WARNINGS.md](docs/DEVELOPER_WARNINGS.md)
 
-## Architecture
+## Demo Video
 
-| Part       | Stack              | Path       | Port |
-|-----------|--------------------|------------|------|
-| Backend   | FastAPI (Python)   | `backend/` | 8000 |
-| Frontend  | Next.js 16, React  | `frontend/`| 3000 |
+[![MakerMods delivery video preview](docs/assets/makermods-delivery-poster.png)](docs/assets/makermods-delivery-video.mp4)
 
-- Backend runs lerobot CLI via subprocess and serves REST + WebSocket (logs).
-- Frontend proxies `/api/*` and `/ws/*` to the backend (see `frontend/next.config.ts`).
-- Config is stored in `webui_config.json` at the repo root (gitignored).
+GitHub does not reliably inline-play repository MP4 files inside `README.md`. The preview image above is clickable and opens the full video in the repo.
 
----
+## Project Overview
 
-## Prerequisites
+This UI wraps the LeRobot CLI into a browser-based workflow for:
 
-- **lerobot** installed and working in its own environment (e.g. `conda activate lerobot`). Not covered here.
-- **Node.js 18+** and **npm** (for the frontend).
-- **Python 3.10+** in the same environment you use for lerobot (for the backend).
+- robot setup
+- serial port assignment
+- camera detection and preview
+- calibration
+- teleoperation
+- dataset recording
+- Qualia training job submission
+- policy inference
 
----
+The backend runs FastAPI and shells out to LeRobot commands. The frontend is a Next.js wizard intended to reduce operator error during demos and data collection.
 
-## 1. Install Node.js and npm (Linux)
+## Artifact Links
 
-You need Node 18 or newer for the frontend. Pick one method.
+| Artifact | Link | Notes |
+| --- | --- | --- |
+| Dataset | [Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12) | Main LeRobot dataset used for training |
+| Model | [qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9) | ACT model trained through Qualia |
+| LeRobot fork | [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods) | Robot-side and LeRobot-side changes |
+| Delivery video | [docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4) | Final project demo video |
 
-### Option A: NVM (no sudo, recommended)
+## Quick Start
 
-[NVM](https://github.com/nvm-sh/nvm) installs Node in your home directory.
+### Prerequisites
 
-```bash
-# Install NVM
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+- Python 3.10+
+- Node.js 18+
+- a working LeRobot environment
+- access to the companion fork: [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods)
 
-# Load NVM in this shell (or open a new terminal)
-export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+### Backend
 
-# Install Node LTS
-nvm install --lts
-
-# Verify
-node -v   # e.g. v20.x.x or v22.x.x
-npm -v
-```
-
-Add to your shell profile so NVM loads in new terminals (NVM’s install script usually does this):
-
-```bash
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-```
-
-### Option B: System packages (Debian/Ubuntu, ARM64-friendly)
+Use the same Python environment that contains `lerobot`.
 
 ```bash
-sudo apt update
-sudo apt install -y nodejs npm
-node -v   # Should be 18+ for Next.js 16
-```
-
-If your distro ships an old Node, use NVM (Option A) or the [NodeSource](https://github.com/nodesource/distributions) repo.
-
----
-
-## 2. Backend (Python)
-
-Use the **same** environment where lerobot is installed (e.g. conda `lerobot`).
-
-```bash
-# Activate your lerobot environment
-conda activate lerobot   # or: source /path/to/venv/bin/activate
-
-# From the MakerMods-LeRobot-UI repo root
 cd /path/to/MakerMods-LeRobot-UI
-pip install -r requirements_linux.txt
+PYTHONPATH=/path/to/lerobot-MakerMods/src python -m backend.main
 ```
 
-**requirements_linux.txt** includes:
-
-- `fastapi`, `uvicorn` — API and server  
-- `opencv-python-headless` — camera scanning/preview (no GUI)  
-- `huggingface_hub` — Hugging Face datasets/repos  
-
-If you already have lerobot installed, some of these may be present; installing again is safe.
-
-**Optional:** If you run the backend on a machine with a display and want OpenCV windows, use `opencv-python` instead of `opencv-python-headless` (or install it in addition; headless is enough for the UI).
-
----
-
-## 3. Frontend (Node)
-
-From the repo root:
+### Frontend
 
 ```bash
 cd /path/to/MakerMods-LeRobot-UI/frontend
 npm install
-```
-
-If you use NVM, ensure it’s loaded in this terminal (`nvm use default` or open a new terminal after installing NVM).
-
----
-
-## 4. Run the application
-
-Use two terminals.
-
-**Terminal 1 — Backend (port 8000)**
-
-```bash
-conda activate lerobot
-cd /path/to/MakerMods-LeRobot-UI
-python -m backend.main
-```
-
-**Terminal 2 — Frontend (port 3000)**
-
-```bash
-cd /path/to/MakerMods-LeRobot-UI/frontend
 npm run dev
 ```
 
-Then open **http://localhost:3000** in your browser. The frontend will talk to the backend at `localhost:8000` via the configured rewrites.
+Then open `http://localhost:3000`.
 
----
+## Environment Incident And Isolation Note
 
-## 5. Verify
+Our first local environment setup did not stay healthy. We kept the failed state for reference under the local LeRobot workspace as:
 
-- **Backend:** http://localhost:8000/api/health should return `{"status":"healthy",...}`.
-- **Frontend:** http://localhost:3000 should show the wizard UI.
-- Ensure ports 3000 and 8000 are free before starting.
+- `.conda-env-broken-20260329-142732`
+- `.sparse-backup-20260329`
+
+That failure is exactly why this project now treats environment state, source code, caches, and public artifacts as separate concerns. The practical rule is simple:
+
+1. commit or tag a known-good state before large dependency or hardware changes
+2. use a separate environment for risky experiments
+3. keep local caches and generated outputs out of Git
+4. push large datasets and models to Hugging Face instead of GitHub
+
+Additional notes are in [docs/DEVELOPER_WARNINGS.md](docs/DEVELOPER_WARNINGS.md).
+
+## Known Issues And Developer Notes
+
+- Bug tracking and reproduction notes: [docs/BUG_LOG.md](docs/BUG_LOG.md)
+- Developer warnings and setup caveats: [docs/DEVELOPER_WARNINGS.md](docs/DEVELOPER_WARNINGS.md)
+
+The most important recurring pitfalls were:
+
+- macOS camera permission must be granted to the host app process, not only to Python
+- inference must start with a valid `PYTHONPATH` pointing to the LeRobot source tree
+- evaluation dataset names should be unique and should start with `eval_`
+- serial ports and calibration files need strict left/right ID consistency in bimanual mode
+
+## Repository Structure
+
+| Path | Purpose |
+| --- | --- |
+| `backend/` | FastAPI routes and service layer |
+| `frontend/` | Next.js wizard UI |
+| `docs/BUG_LOG.md` | bug log and mitigation history |
+| `docs/DEVELOPER_WARNINGS.md` | setup warnings and isolation guidance |
+| `docs/assets/` | delivery media assets |
+| `PROGRESS.md` | implementation changelog |
+
+## License
+
+This UI repository is released under the [MIT License](LICENSE).
+
+Related artifacts keep their own licenses:
+
+- the linked LeRobot fork remains under its original Apache-2.0 terms
+- the Hugging Face dataset and model use the licenses declared on their Hugging Face pages

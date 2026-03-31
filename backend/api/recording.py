@@ -17,6 +17,16 @@ from backend.services.process_manager import process_manager
 
 router = APIRouter()
 config_manager = ConfigManager()
+WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+LEROBOT_SRC_DIR = WORKSPACE_ROOT / "lerobot-MakerMods-main" / "src"
+
+
+def _build_recording_env(display_data: bool) -> dict[str, str]:
+    """Provide a stable import path for lerobot subprocesses."""
+    env: dict[str, str] = {"PYTHONPATH": str(LEROBOT_SRC_DIR)}
+    if not display_data:
+        env["RERUN"] = "off"
+    return env
 
 
 def build_recording_command(config, request: RecordingRequest) -> list[str]:
@@ -35,7 +45,9 @@ def build_recording_command(config, request: RecordingRequest) -> list[str]:
 
         bi = config.bimanual
         return [
-            "lerobot-record",
+            sys.executable,
+            "-m",
+            "lerobot.scripts.lerobot_record",
             "--robot.type=bi_so101_follower",
             f"--robot.left_arm_port={bi.left_follower_port}",
             f"--robot.right_arm_port={bi.right_follower_port}",
@@ -64,7 +76,9 @@ def build_recording_command(config, request: RecordingRequest) -> list[str]:
 
         sa = config.single_arm
         return [
-            "lerobot-record",
+            sys.executable,
+            "-m",
+            "lerobot.scripts.lerobot_record",
             "--robot.type=so101_follower",
             f"--robot.port={sa.follower_port}",
             f"--robot.id={sa.follower_id or 'single_follower'}",
@@ -136,7 +150,8 @@ async def start_recording(request: RecordingRequest):
 
         # Build and start command
         command = build_recording_command(config, request)
-        process_id = await process_manager.start_process(command, "recording")
+        env = _build_recording_env(request.display_data)
+        process_id = await process_manager.start_process(command, "recording", env=env)
 
         # Register process→ports mapping for release on stop
         await port_lock_manager.register_process(process_id, ports)
