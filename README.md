@@ -21,9 +21,9 @@ Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo pa
 
 Final project delivery video. Click the preview to open the full MP4.
 
-[![ACT bread grasp demo preview](docs/assets/videos/act-bread-grasp-poster.png)](docs/assets/videos/act-bread-grasp-demo.mp4)
+[![ACT bread grasp demo GIF](docs/assets/videos/act-bread-grasp-demo.gif)](docs/assets/videos/act-bread-grasp-demo.mp4)
 
-This second video is the ACT policy result trained from our recorded dataset and Qualia workflow. It shows the trained model performing the bread-grasp task.
+This second block is an animated GIF preview of the ACT policy result trained from our recorded dataset and Qualia workflow. Click it to open the full MP4.
 
 GitHub does not reliably inline-play repository MP4 files inside `README.md`. The preview image above is clickable and opens the full video in the repo.
 
@@ -82,6 +82,7 @@ In other words: this is a working hackathon software delivery with real engineer
 | LeRobot fork | [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods) | Robot-side and LeRobot-side changes |
 | Delivery video | [docs/assets/videos/makermods-delivery-video.mp4](docs/assets/videos/makermods-delivery-video.mp4) | Final project demo video |
 | ACT demo video | [docs/assets/videos/act-bread-grasp-demo.mp4](docs/assets/videos/act-bread-grasp-demo.mp4) | Trained ACT model grasping bread |
+| ACT demo GIF | [docs/assets/videos/act-bread-grasp-demo.gif](docs/assets/videos/act-bread-grasp-demo.gif) | Animated README preview of the trained ACT result |
 
 ## Quick Start
 
