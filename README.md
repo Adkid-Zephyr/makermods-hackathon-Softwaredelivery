@@ -1,6 +1,6 @@
-# MakerMods LeRobot UI
+# MakerMods Hackathon Software Delivery
 
-Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo packages the Web UI, the public Hugging Face artifacts, the delivery video, and the engineering notes we want reviewers and future developers to see first.
+Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo packages the frontend, backend, hardware-side helper scripts, the public Hugging Face artifacts, the delivery video, and the engineering notes we want reviewers and future developers to see first.
 
 ## Deliverables
 
@@ -167,7 +167,7 @@ The next iteration should focus less on adding features and more on reducing ope
 
 ## License
 
-This UI repository is released under the [MIT License](LICENSE).
+This delivery repository is released under the [MIT License](LICENSE).
 
 Related artifacts keep their own licenses:
 
