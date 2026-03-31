@@ -1,5 +1,7 @@
 # MakerMods Hackathon Software Delivery
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo packages the frontend, backend, hardware-side helper scripts, the public Hugging Face artifacts, the delivery video, and the engineering notes we want reviewers and future developers to see first.
 
 ## Deliverables
