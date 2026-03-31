@@ -10,15 +10,40 @@ Hackathon delivery repository for our MakerMods + LeRobot workflow. This repo pa
 - **LeRobot fork used by the project**: [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods)
 - **Hugging Face dataset**: [Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12)
 - **Qualia-trained model**: [qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9)
-- **Delivery video**: [docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4)
+- **Delivery video**: [docs/assets/videos/makermods-delivery-video.mp4](docs/assets/videos/makermods-delivery-video.mp4)
+- **ACT model bread-grasp demo**: [docs/assets/videos/act-bread-grasp-demo.mp4](docs/assets/videos/act-bread-grasp-demo.mp4)
 - **Bug log**: [docs/BUG_LOG.md](docs/BUG_LOG.md)
 - **Developer warnings**: [docs/DEVELOPER_WARNINGS.md](docs/DEVELOPER_WARNINGS.md)
 
-## Demo Video
+## Demo Videos
 
-[![MakerMods delivery video preview](docs/assets/makermods-delivery-poster.png)](docs/assets/makermods-delivery-video.mp4)
+[![MakerMods delivery video preview](docs/assets/videos/makermods-delivery-poster.png)](docs/assets/videos/makermods-delivery-video.mp4)
+
+Final project delivery video. Click the preview to open the full MP4.
+
+[![ACT bread grasp demo preview](docs/assets/videos/act-bread-grasp-poster.png)](docs/assets/videos/act-bread-grasp-demo.mp4)
+
+This second video is the ACT policy result trained from our recorded dataset and Qualia workflow. It shows the trained model performing the bread-grasp task.
 
 GitHub does not reliably inline-play repository MP4 files inside `README.md`. The preview image above is clickable and opens the full video in the repo.
+
+## Project Gallery
+
+Award and final delivery scene:
+
+![Team award](docs/assets/photos/team-award.jpg)
+
+Robot close-up:
+
+![Robot closeup](docs/assets/photos/robot-closeup.jpg)
+
+Hackathon work session:
+
+![Team workshop](docs/assets/photos/team-workshop.jpg)
+
+On-site discussion and review:
+
+![Judge discussion](docs/assets/photos/judge-discussion.jpg)
 
 ## Project Overview
 
@@ -55,7 +80,8 @@ In other words: this is a working hackathon software delivery with real engineer
 | Dataset | [Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12) | Main LeRobot dataset used for training |
 | Model | [qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9) | ACT model trained through Qualia |
 | LeRobot fork | [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods) | Robot-side and LeRobot-side changes |
-| Delivery video | [docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4) | Final project demo video |
+| Delivery video | [docs/assets/videos/makermods-delivery-video.mp4](docs/assets/videos/makermods-delivery-video.mp4) | Final project demo video |
+| ACT demo video | [docs/assets/videos/act-bread-grasp-demo.mp4](docs/assets/videos/act-bread-grasp-demo.mp4) | Trained ACT model grasping bread |
 
 ## Quick Start
 

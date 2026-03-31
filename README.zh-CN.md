@@ -10,15 +10,40 @@
 - **项目使用的 LeRobot fork**：[Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods)
 - **Hugging Face 数据集**：[Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12)
 - **Qualia 训练出的模型**：[qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9)
-- **交付视频**：[docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4)
+- **交付视频**：[docs/assets/videos/makermods-delivery-video.mp4](docs/assets/videos/makermods-delivery-video.mp4)
+- **ACT 夹面包演示视频**：[docs/assets/videos/act-bread-grasp-demo.mp4](docs/assets/videos/act-bread-grasp-demo.mp4)
 - **Bug 日志**：[docs/BUG_LOG.md](docs/BUG_LOG.md)
 - **开发者警告**：[docs/DEVELOPER_WARNINGS.md](docs/DEVELOPER_WARNINGS.md)
 
 ## 演示视频
 
-[![MakerMods 交付视频预览](docs/assets/makermods-delivery-poster.png)](docs/assets/makermods-delivery-video.mp4)
+[![MakerMods 交付视频预览](docs/assets/videos/makermods-delivery-poster.png)](docs/assets/videos/makermods-delivery-video.mp4)
+
+这是最终交付视频，点击预览图即可打开完整 MP4。
+
+[![ACT 夹面包视频预览](docs/assets/videos/act-bread-grasp-poster.png)](docs/assets/videos/act-bread-grasp-demo.mp4)
+
+这段视频是我们基于录制数据与 Qualia 训练流程得到的 ACT 模型效果，展示的是训练后模型执行夹面包任务。
 
 GitHub 在 `README.md` 中通常不会稳定内嵌播放仓库里的 MP4，所以这里使用可点击的预览图，点击后即可打开完整视频。
+
+## 项目现场图集
+
+获奖与最终交付现场：
+
+![团队获奖现场](docs/assets/photos/team-award.jpg)
+
+机器人近景：
+
+![机器人近景](docs/assets/photos/robot-closeup.jpg)
+
+黑客松工作过程：
+
+![团队工作现场](docs/assets/photos/team-workshop.jpg)
+
+现场讨论与评审交流：
+
+![现场讨论](docs/assets/photos/judge-discussion.jpg)
 
 ## 项目概述
 
@@ -55,7 +80,8 @@ GitHub 在 `README.md` 中通常不会稳定内嵌播放仓库里的 MP4，所�
 | 数据集 | [Adkid/pickupbreadCombine12](https://huggingface.co/datasets/Adkid/pickupbreadCombine12) | 本次训练使用的主数据集 |
 | 模型 | [qualia-robotics/act-pickupbreadcombine12-e0ad61c9](https://huggingface.co/qualia-robotics/act-pickupbreadcombine12-e0ad61c9) | 通过 Qualia 训练得到的 ACT 模型 |
 | LeRobot fork | [Maker-Mods/lerobot-MakerMods](https://github.com/Maker-Mods/lerobot-MakerMods) | 机器人侧与 LeRobot 侧改动 |
-| 交付视频 | [docs/assets/makermods-delivery-video.mp4](docs/assets/makermods-delivery-video.mp4) | 最终项目演示视频 |
+| 交付视频 | [docs/assets/videos/makermods-delivery-video.mp4](docs/assets/videos/makermods-delivery-video.mp4) | 最终项目演示视频 |
+| ACT 演示视频 | [docs/assets/videos/act-bread-grasp-demo.mp4](docs/assets/videos/act-bread-grasp-demo.mp4) | 训练后 ACT 模型执行夹面包任务 |
 
 ## 快速启动
 
